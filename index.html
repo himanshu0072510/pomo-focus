@@ -407,6 +407,30 @@ body.focus-mode .bg-grid{opacity:.6}
 .shop-item .s-price{font-size:11px;color:var(--text-3)}
 .shop-item button{margin-top:6px;padding:4px 10px;border-radius:6px;border:none;background:var(--accent);color:#fff;font-size:11px;cursor:pointer}
 .shop-item button:disabled{opacity:.5;cursor:not-allowed}
+/* Forest garden */
+.forest-wrap{position:relative;width:100%;height:180px;background:linear-gradient(180deg,#0f1a14,#1a2a20);border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+.forest-ground{position:absolute;bottom:0;left:0;right:0;height:30px;background:linear-gradient(180deg,#2d4a30,#1a2a20)}
+.forest-tree{position:absolute;bottom:24px;transform:translateX(-50%);font-size:24px;transition:transform .4s;cursor:pointer}
+.forest-tree.dead{filter:grayscale(1) brightness(.6)}
+.forest-tree:hover{transform:translateX(-50%) scale(1.2)}
+.forest-empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--text-3);font-size:12px}
+/* Tags */
+.tag-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.tag-chip{padding:4px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);font-size:11px;cursor:pointer;color:var(--text-2)}
+.tag-chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tag-input-row{display:flex;gap:6px;margin-top:6px}
+/* Notes */
+.note-modal textarea{width:100%;min-height:80px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-family:inherit;font-size:13px;resize:vertical}
+/* Leaderboard */
+.lb-row{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:6px;background:var(--surface-2);font-size:12px;margin-bottom:4px}
+.lb-row.me{border:1px solid var(--accent)}
+.lb-rank{font-weight:700;color:var(--accent-2);min-width:24px}
+/* Challenges */
+.challenge{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px}
+.challenge-title{font-size:13px;font-weight:600;margin-bottom:4px}
+.challenge-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:6px}
+.challenge-bar>div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+.challenge-meta{font-size:11px;color:var(--text-3);margin-top:4px}
 /* History list */
 .history-list{max-height:180px;overflow:auto;display:flex;flex-direction:column;gap:6px}
 .history-item{
@@ -458,6 +482,7 @@ body.focus-mode .bg-grid{opacity:.6}
         <button class="mode-btn" data-mode="short">Short Break</button>
         <button class="mode-btn" data-mode="long">Long Break</button>
       </div>
+      <div class="tag-row" id="tagRow"></div>
       <div class="ring-wrap">
         <svg class="ring-svg" viewBox="0 0 320 320">
           <circle class="ring-bg" cx="160" cy="160" r="148"/>
@@ -507,6 +532,18 @@ body.focus-mode .bg-grid{opacity:.6}
         <strong id="goalText">0 / 8 pomodoros</strong>
       </div>
       <div class="stat-bar" style="margin-top:6px"><div id="goalBar" style="width:0%"></div></div>
+    </section>
+
+    <section class="card">
+      <h3>My Forest <span class="badge" id="forestBadge">0 trees</span></h3>
+      <div class="forest-wrap" id="forestWrap">
+        <div class="forest-ground"></div>
+        <div class="forest-empty" id="forestEmpty">Complete a focus session to plant your first tree 🌱</div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn-ghost" id="speciesBtn" style="flex:1;font-size:12px">Species: <span id="speciesName">Classic</span></button>
+        <button class="btn-ghost" id="forestClear" style="font-size:12px">Clear dead</button>
+      </div>
     </section>
 
     <section class="card">
@@ -601,6 +638,18 @@ body.focus-mode .bg-grid{opacity:.6}
           <button class="task-add" id="roomSend">Send</button>
         </div>
       </div>
+    </section>
+
+    <section class="card">
+      <h3>Challenges <span class="badge" id="challengeBadge">0</span></h3>
+      <div id="challengeList"></div>
+      <button class="btn-ghost" id="newChallenge" style="width:100%;margin-top:8px;font-size:12px">+ New Challenge</button>
+    </section>
+
+    <section class="card">
+      <h3>Leaderboard <span class="badge" id="lbBadge">Room</span></h3>
+      <div id="leaderboardList"></div>
+      <div class="task-empty" id="lbEmpty">Connect to a room to see rankings.</div>
     </section>
 
     <section class="card">
@@ -705,6 +754,29 @@ body.focus-mode .bg-grid{opacity:.6}
   </div>
 </div>
 
+<!-- Note modal -->
+<div class="modal-backdrop" id="noteModal">
+  <div class="modal">
+    <h2>Session Note</h2>
+    <p class="sub">Add a note to this completed pomodoro (optional).</p>
+    <textarea class="note-modal" id="noteText" placeholder="What did you work on?"></textarea>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="skipNote">Skip</button>
+      <button class="btn-primary" id="saveNote" style="padding:10px 20px">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Species modal -->
+<div class="modal-backdrop" id="speciesModal">
+  <div class="modal">
+    <h2>Tree Species</h2>
+    <p class="sub">Choose which tree to plant. Unlock more with coins.</p>
+    <div class="shop-grid" id="speciesGrid"></div>
+    <div class="modal-actions"><button class="btn-ghost" id="closeSpecies">Done</button></div>
+  </div>
+</div>
+
 <!-- Breathing overlay -->
 <div class="breathe-overlay" id="breatheOverlay">
   <div class="breathe-circle"></div>
@@ -738,13 +810,25 @@ let tasks = load('tasks', []);
 let history = load('history', []);
 let stats = load('stats', {}); // { 'YYYY-MM-DD': {poms, focusMin, tasks} }
 let hourCounts = load('hourCounts', {}); // { 'H': count }
+let tagStats = load('tagStats', {}); // { tag: count }
 let streak = 0;
 
 /* Gamification */
-const GAME_DEFAULTS = {xp:0, coins:0, level:1, badges:[], ownedThemes:['#7c5cff']};
+const GAME_DEFAULTS = {xp:0, coins:0, level:1, badges:[], ownedThemes:['#7c5cff'], ownedTrees:['🌲'], selectedTree:'🌲'};
 let game = Object.assign({}, GAME_DEFAULTS, load('game', {}));
 if(!game.ownedThemes) game.ownedThemes=['#7c5cff'];
 if(!game.badges) game.badges=[];
+if(!game.ownedTrees) game.ownedTrees=['🌲'];
+if(!game.selectedTree) game.selectedTree='🌲';
+
+/* Forest / Tags / Challenges */
+let forest = load('forest', []); // [{species,x,y,date,dead,tag}]
+let activeTreeIndex = null;
+const DEFAULT_TAGS = ['Work','Study','Reading','Coding','Design','Other'];
+let tags = load('tags', DEFAULT_TAGS);
+let selectedTag = load('selectedTag', 'Work');
+let challenges = load('challenges', []);
+let pendingNoteCallback = null;
 
 /* Collaboration */
 let peer=null, conn=null, isHost=false, roomCode=null;
@@ -892,6 +976,13 @@ function startTimer(){
   running=true;
   $('startBtn').textContent='Pause';
   if(!audioCtx){ try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch{} }
+  // plant a growing tree on focus start
+  if(mode==='focus'){
+    const t={species: game.selectedTree||'🌲', x:8+Math.random()*84, date:new Date().toLocaleDateString(), dead:false, tag:selectedTag, note:'', growing:true};
+    forest.push(t); activeTreeIndex=forest.length-1;
+    if(forest.length>200) { forest.shift(); if(activeTreeIndex>0) activeTreeIndex--; }
+    save('forest',forest); renderForest();
+  }
   interval = setInterval(tick, 1000);
 }
 function pauseTimer(){
@@ -901,11 +992,19 @@ function pauseTimer(){
 }
 function toggleTimer(){ running?pauseTimer():startTimer(); }
 function resetTimer(){
+  if(activeTreeIndex!=null && mode==='focus' && forest[activeTreeIndex] && running){
+    forest[activeTreeIndex].dead=true; save('forest',forest); renderForest();
+  }
+  activeTreeIndex=null;
   pauseTimer();
   remaining=modeDuration(mode); total=remaining;
   updateDisplay();
 }
 function skipTimer(){
+  if(activeTreeIndex!=null && mode==='focus' && forest[activeTreeIndex]){
+    forest[activeTreeIndex].dead=true; save('forest',forest); renderForest();
+  }
+  activeTreeIndex=null;
   pauseTimer();
   handleComplete(true);
 }
@@ -927,7 +1026,15 @@ function handleComplete(skipped){
   if(!skipped && mode==='focus'){
     completedPoms++;
     recordPomodoro();
-    toast('Focus session complete! 🎉');
+    if(activeTreeIndex!=null && forest[activeTreeIndex]){ forest[activeTreeIndex].growing=false; save('forest',forest); activeTreeIndex=null; }
+    openNoteModal((note)=>{ if(note){ // attach note to last tree & last history
+      const lastTree=forest[forest.length-1]; if(lastTree) lastTree.note=note;
+      if(history[0]) history[0].note=note;
+      save('forest',forest); save('history',history); renderForest();
+    }});
+    updateChallenges();
+    pushSelfToLeaderboard();
+    toast('Focus session complete! 🎉 +tree planted');
     if(settings.soundAlert) playChime();
     if(settings.notify) notify('Focus complete', 'Time for a break!');
     // decide next mode
@@ -972,8 +1079,10 @@ function recordPomodoro(){
   const h=new Date().getHours();
   hourCounts[h]=(hourCounts[h]||0)+1;
   save('hourCounts', hourCounts);
+  tagStats[selectedTag]=(tagStats[selectedTag]||0)+1;
+  save('tagStats', tagStats);
   // history
-  history.unshift({mode:'Focus', time:new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), date:key, dur:settings.focus+'m', hour:h});
+  history.unshift({mode:'Focus', time:new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), date:key, dur:settings.focus+'m', hour:h, tag:selectedTag, note:''});
   if(history.length>50) history.pop();
   save('history', history);
   // streak
@@ -1026,6 +1135,16 @@ const BADGES = [
   {id:'tasks5', name:'Task Master', emoji:'✅', desc:'Complete 5 tasks', check:()=>tasks.filter(t=>t.done).length>=5},
   {id:'level5', name:'Veteran', emoji:'⭐', desc:'Reach level 5', check:()=>game.level>=5},
   {id:'level10', name:'Master', emoji:'🏆', desc:'Reach level 10', check:()=>game.level>=10},
+];
+const TREE_SPECIES = [
+  {name:'Classic Pine', emoji:'🌲', price:0},
+  {name:'Cherry Blossom', emoji:'🌸', price:30},
+  {name:'Cactus', emoji:'🌵', price:25},
+  {name:'Palm', emoji:'🌴', price:35},
+  {name:'Maple', emoji:'🍁', price:40},
+  {name:'Bonsai', emoji:'🌳', price:50},
+  {name:'Mushroom', emoji:'🍄', price:20},
+  {name:'Sunflower', emoji:'🌻', price:15},
 ];
 function totalPomsAllTime(){ return Object.values(stats).reduce((a,b)=>a+(b.poms||0),0); }
 function awardXP(n){
@@ -1133,7 +1252,7 @@ function updateStats(){
   $('statStreakBar').style.width = Math.min(100, streak*10)+'%';
   $('taskBadge').textContent = tasks.filter(t=>!t.done).length;
   $('histBadge').textContent = history.length;
-  try{ renderGame(); renderAnalytics(); }catch(e){}
+  try{ renderGame(); renderAnalytics(); renderForest(); renderChallenges(); updateLeaderboard(); }catch(e){}
 }
 
 function renderWeek(){
@@ -1222,6 +1341,177 @@ function loadMusic(url){
   $('musicBadge').textContent='Playing';
 }
 function stopMusic(){ $('musicContainer').innerHTML=''; $('musicBadge').textContent='Off'; }
+
+/* ===================== Forest ===================== */
+function renderForest(){
+  const wrap=$('forestWrap'); if(!wrap) return;
+  // clear trees
+  wrap.querySelectorAll('.forest-tree').forEach(e=>e.remove());
+  const empty=$('forestEmpty');
+  if(forest.length===0){ empty.style.display='grid'; }
+  else empty.style.display='none';
+  forest.forEach(t=>{
+    const el=document.createElement('div');
+    el.className='forest-tree'+(t.dead?' dead':'');
+    el.style.left=t.x+'%';
+    el.style.bottom='24px';
+    el.textContent=t.species;
+    el.title=(t.date||'')+(t.tag?' · '+t.tag:'')+(t.note?'\n'+t.note:'');
+    wrap.appendChild(el);
+  });
+  $('forestBadge').textContent = forest.filter(t=>!t.dead).length+' trees';
+  $('speciesName').textContent = TREE_SPECIES.find(s=>s.emoji===game.selectedTree)?.name || 'Classic';
+}
+function plantTree(tag, note){
+  const t={
+    species: game.selectedTree || '🌲',
+    x: 8 + Math.random()*84,
+    y: 0,
+    date: new Date().toLocaleDateString(),
+    dead: false,
+    tag: tag||selectedTag,
+    note: note||''
+  };
+  forest.push(t);
+  if(forest.length>200) forest.shift();
+  save('forest', forest);
+  renderForest();
+}
+function killLastTree(){
+  // mark most recent non-dead tree as dead (abandon)
+  for(let i=forest.length-1;i>=0;i--){
+    if(!forest[i].dead){ forest[i].dead=true; save('forest',forest); renderForest(); return; }
+  }
+}
+function clearDeadTrees(){
+  forest = forest.filter(t=>!t.dead);
+  save('forest', forest); renderForest(); toast('Cleared dead trees');
+}
+function renderSpecies(){
+  const grid=$('speciesGrid'); if(!grid) return; grid.innerHTML='';
+  TREE_SPECIES.forEach(sp=>{
+    const owned=game.ownedTrees.includes(sp.emoji);
+    const canBuy=game.coins>=sp.price;
+    const selected=game.selectedTree===sp.emoji;
+    const d=document.createElement('div');
+    d.className='shop-item'+(owned?' owned':'');
+    d.innerHTML=`
+      <div class="s-name">${sp.name}</div>
+      <div style="font-size:28px;margin:6px auto">${sp.emoji}</div>
+      <div class="s-price">${owned?(selected?'Selected':sp.price===0?'Free':'Owned'):sp.price+' coins'}</div>
+      <button ${!owned&&!canBuy?'disabled':''}>${owned?(selected?'Selected':'Select'):canBuy?'Buy':'Locked'}</button>
+    `;
+    const btn=d.querySelector('button');
+    btn.addEventListener('click', ()=>{
+      if(!owned){
+        if(game.coins<sp.price) return;
+        game.coins-=sp.price; game.ownedTrees.push(sp.emoji); save('game',game);
+        toast('Unlocked '+sp.name+'!');
+        renderSpecies(); renderGame();
+      } else {
+        game.selectedTree=sp.emoji; save('game',game);
+        renderSpecies(); renderForest();
+        toast('Selected '+sp.name);
+      }
+    });
+    grid.appendChild(d);
+  });
+}
+
+/* ===================== Tags ===================== */
+function renderTags(){
+  const row=$('tagRow'); if(!row) return; row.innerHTML='';
+  tags.forEach(tg=>{
+    const c=document.createElement('div');
+    c.className='tag-chip'+(tg===selectedTag?' active':'');
+    c.textContent=tg;
+    c.addEventListener('click', ()=>{ selectedTag=tg; save('selectedTag', selectedTag); renderTags(); });
+    row.appendChild(c);
+  });
+  // add tag button
+  const add=document.createElement('div');
+  add.className='tag-chip'; add.textContent='+';
+  add.addEventListener('click', ()=>{
+    const v=prompt('New tag name:'); if(!v) return;
+    if(!tags.includes(v)){ tags.push(v); save('tags',tags); }
+    selectedTag=v; save('selectedTag', selectedTag); renderTags();
+  });
+  row.appendChild(add);
+}
+
+/* ===================== Notes ===================== */
+function openNoteModal(cb){ pendingNoteCallback=cb; $('noteText').value=''; $('noteModal').classList.add('open'); }
+function closeNoteModal(){ $('noteModal').classList.remove('open'); pendingNoteCallback=null; }
+
+/* ===================== Challenges ===================== */
+function ensureChallenges(){
+  const weekKey = getWeekKey();
+  // default weekly challenge
+  if(!challenges.some(c=>c.week===weekKey)){
+    challenges.push({id:'w'+weekKey, title:'Complete 15 pomodoros this week', type:'poms', target:15, progress:0, week:weekKey, done:false});
+    save('challenges', challenges);
+  }
+}
+function getWeekKey(){ const d=new Date(); const y=d.getFullYear(); const w=Math.ceil(((d-new Date(y,0,1))/86400000+new Date(y,0,1).getDay()+1)/7); return y+'-W'+w; }
+function updateChallenges(){
+  ensureChallenges();
+  const weekPoms = weeklyPomCount();
+  challenges.forEach(c=>{
+    if(c.type==='poms'){ c.progress=weekPoms; if(c.progress>=c.target && !c.done){ c.done=true; game.coins+=10; save('game',game); toast('Challenge complete! +10 coins 🎉'); } }
+  });
+  save('challenges', challenges);
+  renderChallenges();
+}
+function weeklyPomCount(){
+  const today=new Date(); let total=0;
+  for(let i=0;i<7;i++){ const d=new Date(); d.setDate(today.getDate()-i); const k=dayKey(d); total += (stats[k]||{}).poms||0; }
+  return total;
+}
+function renderChallenges(){
+  const el=$('challengeList'); if(!el) return; el.innerHTML='';
+  challenges.filter(c=>c.week===getWeekKey()).forEach(c=>{
+    const pct=Math.min(100, (c.progress/c.target)*100);
+    const d=document.createElement('div');
+    d.className='challenge';
+    d.innerHTML=`
+      <div class="challenge-title">${c.done?'✅ ':'🎯 '}${escapeHtml(c.title)}</div>
+      <div class="challenge-bar"><div style="width:${pct}%"></div></div>
+      <div class="challenge-meta">${c.progress} / ${c.target}${c.done?' · Complete!':''}</div>
+    `;
+    el.appendChild(d);
+  });
+  $('challengeBadge').textContent = challenges.filter(c=>c.week===getWeekKey() && !c.done).length;
+}
+function addChallenge(){
+  const title=prompt('Challenge title:'); if(!title) return;
+  const target=parseInt(prompt('Target (number):'))||10;
+  challenges.push({id:'c'+Date.now(), title, type:'poms', target, progress:0, week:getWeekKey(), done:false});
+  save('challenges', challenges); updateChallenges(); toast('Challenge added');
+}
+
+/* ===================== Leaderboard ===================== */
+let lbEntries = [];
+function updateLeaderboard(){
+  const el=$('leaderboardList'); if(!el) return;
+  if(lbEntries.length===0){ $('lbEmpty').style.display='block'; el.innerHTML=''; return; }
+  $('lbEmpty').style.display='none';
+  el.innerHTML='';
+  const sorted=[...lbEntries].sort((a,b)=>b.minutes-a.minutes);
+  sorted.forEach((e,i)=>{
+    const d=document.createElement('div');
+    d.className='lb-row'+(e.me?' me':'');
+    d.innerHTML=`<span class="lb-rank">#${i+1}</span><span>${escapeHtml(e.name)}</span><span style="font-family:'JetBrains Mono',monospace">${e.minutes}m</span>`;
+    el.appendChild(d);
+  });
+}
+function pushSelfToLeaderboard(){
+  const me={name:'You', minutes: todayStats().focusMin, me:true};
+  const idx=lbEntries.findIndex(e=>e.me);
+  if(idx>=0) lbEntries[idx]=me; else lbEntries.push(me);
+  // broadcast
+  if(conn && conn.open){ try{ conn.send({type:'lb', entry:me}); }catch{} }
+  updateLeaderboard();
+}
 
 /* ===================== Tasks ===================== */
 function renderTasks(){
@@ -1533,6 +1823,7 @@ function setupConn(c){
       if(data.mode){ setMode(data.mode,false); }
     }
     if(data.type==='pom'){ appendMsg('System', 'Peer completed a pomodoro! 🍅'); }
+    if(data.type==='lb'){ const idx=lbEntries.findIndex(e=>e.name===data.entry.name && !e.me); if(idx>=0) lbEntries[idx]=data.entry; else lbEntries.push(data.entry); updateLeaderboard(); }
   });
   c.on('close', ()=>{ $('roomPeers').textContent='Disconnected'; conn=null; });
   $('roomPeers').textContent='Connected';
@@ -1567,6 +1858,10 @@ function init(){
   renderGame();
   renderAnalytics();
   renderWeek();
+  renderForest();
+  renderTags();
+  renderChallenges();
+  updateLeaderboard();
 
   // mode buttons
   document.querySelectorAll('.mode-btn').forEach(b=>{
@@ -1658,6 +1953,31 @@ function init(){
 
   // Analytics export
   $('exportCsv').addEventListener('click', exportCSV);
+
+  // Forest
+  $('speciesBtn').addEventListener('click', ()=>{ renderSpecies(); $('speciesModal').classList.add('open'); });
+  $('closeSpecies').addEventListener('click', ()=> $('speciesModal').classList.remove('open'));
+  $('speciesModal').addEventListener('click', e=>{ if(e.target.id==='speciesModal') $('speciesModal').classList.remove('open'); });
+  $('forestClear').addEventListener('click', clearDeadTrees);
+
+  // Tags
+  renderTags();
+
+  // Note modal
+  $('skipNote').addEventListener('click', ()=>{ closeNoteModal(); });
+  $('saveNote').addEventListener('click', ()=>{
+    const n=$('noteText').value.trim();
+    if(pendingNoteCallback) pendingNoteCallback(n);
+    closeNoteModal();
+  });
+  $('noteModal').addEventListener('click', e=>{ if(e.target.id==='noteModal') closeNoteModal(); });
+
+  // Challenges
+  $('newChallenge').addEventListener('click', addChallenge);
+  updateChallenges();
+
+  // Leaderboard self
+  pushSelfToLeaderboard();
 
   // Collaboration
   $('createRoom').addEventListener('click', createRoom);
