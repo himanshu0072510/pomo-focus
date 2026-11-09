@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0b0d12" />
+<title>Pomodoro Focus — Deep Work Timer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0d12;
+  --bg-2:#12151c;
+  --surface:#171b24;
+  --surface-2:#1f2430;
+  --border:#2a3040;
+  --border-2:#343b4d;
+  --text:#e8ecf4;
+  --text-2:#9aa4b8;
+  --text-3:#6b7386;
+  --accent:#7c5cff;
+  --accent-2:#a78bfa;
+  --accent-glow:rgba(124,92,255,.35);
+  --success:#34d399;
+  --warn:#fbbf24;
+  --danger:#f87171;
+  --focus:#7c5cff;
+  --short:#34d399;
+  --long:#38bdf8;
+  --radius:16px;
+  --radius-sm:10px;
+  --shadow:0 10px 40px rgba(0,0,0,.45);
+  --ring-size:320px;
+}
+[data-theme="light"]{
+  --bg:#f5f7fb;
+  --bg-2:#eef1f7;
+  --surface:#ffffff;
+  --surface-2:#f0f3f9;
+  --border:#d8dde8;
+  --border-2:#c6ccd9;
+  --text:#1a1f2e;
+  --text-2:#4b5568;
+  --text-3:#8a93a6;
+  --accent:#6d4cff;
+  --accent-2:#8b72ff;
+  --accent-glow:rgba(109,76,255,.25);
+  --shadow:0 10px 40px rgba(20,30,60,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+  transition:background .3s,color .3s;
+  -webkit-font-smoothing:antialiased;
+}
+.bg-grid{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(60% 50% at 20% 10%, rgba(124,92,255,.18), transparent 60%),
+    radial-gradient(50% 40% at 80% 90%, rgba(56,189,248,.12), transparent 60%),
+    radial-gradient(40% 30% at 50% 50%, rgba(52,211,153,.06), transparent 70%);
+}
+[data-theme="light"] .bg-grid{
+  background:
+    radial-gradient(60% 50% at 20% 10%, rgba(109,76,255,.12), transparent 60%),
+    radial-gradient(50% 40% at 80% 90%, rgba(56,189,248,.08), transparent 60%);
+}
+.particles{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5}
+.app{
+  position:relative;z-index:1;
+  max-width:1280px;margin:0 auto;padding:24px 20px 40px;
+  display:grid;grid-template-columns:1fr 360px;gap:24px;
+  min-height:100vh;
+}
+@media(max-width:980px){.app{grid-template-columns:1fr;gap:16px;padding:16px}}
+header.topbar{
+  grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;
+  padding:8px 4px 16px;
+}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{
+  width:40px;height:40px;border-radius:12px;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  display:grid;place-items:center;box-shadow:0 8px 24px var(--accent-glow);
+}
+.brand-mark svg{width:22px;height:22px;color:#fff}
+.brand h1{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.brand p{font-size:12px;color:var(--text-3);margin-top:2px}
+.topbar-actions{display:flex;gap:8px;align-items:center}
+.icon-btn{
+  width:40px;height:40px;border-radius:12px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text-2);cursor:pointer;
+  display:grid;place-items:center;transition:all .2s;
+}
+.icon-btn:hover{border-color:var(--border-2);color:var(--text);transform:translateY(-1px)}
+.icon-btn svg{width:18px;height:18px}
+.pill{
+  display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;
+  background:var(--surface);border:1px solid var(--border);font-size:13px;color:var(--text-2);
+}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success)}
+
+/* Main column */
+.main{display:flex;flex-direction:column;gap:20px}
+.timer-card{
+  background:linear-gradient(180deg,var(--surface),var(--bg-2));
+  border:1px solid var(--border);border-radius:24px;padding:32px 24px;
+  box-shadow:var(--shadow);position:relative;overflow:hidden;
+}
+.timer-card::before{
+  content:'';position:absolute;inset:-1px;border-radius:24px;
+  background:linear-gradient(135deg,rgba(124,92,255,.15),transparent 40%,rgba(56,189,248,.1));
+  pointer-events:none;
+}
+.modes{
+  display:flex;gap:8px;justify-content:center;margin-bottom:24px;
+  background:var(--surface-2);padding:6px;border-radius:999px;
+  width:fit-content;margin-left:auto;margin-right:auto;border:1px solid var(--border);
+}
+.mode-btn{
+  padding:8px 18px;border-radius:999px;border:none;background:transparent;
+  color:var(--text-2);font-size:13px;font-weight:600;cursor:pointer;transition:all .25s;
+}
+.mode-btn.active{background:var(--surface);color:var(--text);box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.mode-btn[data-mode="focus"].active{color:var(--focus)}
+.mode-btn[data-mode="short"].active{color:var(--short)}
+.mode-btn[data-mode="long"].active{color:var(--long)}
+.ring-wrap{
+  position:relative;width:var(--ring-size);height:var(--ring-size);
+  margin:0 auto 20px;display:grid;place-items:center;
+}
+.ring-svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--surface-2);stroke-width:10}
+.ring-fg{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset .4s ease,stroke .3s}
+.ring-glow{filter:drop-shadow(0 0 12px currentColor)}
+.ring-center{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:6px;
+}
+.time-display{
+  font-family:'JetBrains Mono',monospace;font-size:72px;font-weight:700;
+  letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums;
+}
+.time-display .sep{opacity:.6}
+.phase-label{font-size:13px;color:var(--text-2);font-weight:500;letter-spacing:.08em;text-transform:uppercase}
+.session-dots{display:flex;gap:8px;margin-top:6px}
+.dot{
+  width:10px;height:10px;border-radius:50%;background:var(--surface-2);
+  border:1px solid var(--border);transition:all .3s;
+}
+.dot.done{background:var(--accent);border-color:var(--accent);box-shadow:0 0 8px var(--accent-glow)}
+.dot.current{background:var(--accent-2);border-color:var(--accent-2);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.25);opacity:.7}}
+.controls{display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap}
+.btn{
+  border:none;cursor:pointer;font-family:inherit;font-weight:600;
+  transition:all .2s;display:inline-flex;align-items:center;gap:8px;
+}
+.btn-primary{
+  padding:14px 36px;border-radius:999px;font-size:16px;color:#fff;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  box-shadow:0 12px 32px var(--accent-glow);
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 40px var(--accent-glow)}
+.btn-primary:active{transform:translateY(0)}
+.btn-secondary{
+  padding:12px 20px;border-radius:999px;font-size:14px;
+  background:var(--surface-2);color:var(--text);border:1px solid var(--border);
+}
+.btn-secondary:hover{border-color:var(--border-2);background:var(--surface)}
+.btn-icon{
+  width:48px;height:48px;border-radius:50%;background:var(--surface-2);
+  color:var(--text);border:1px solid var(--border);display:grid;place-items:center;
+}
+.btn-icon:hover{border-color:var(--border-2)}
+.btn-icon svg{width:20px;height:20px}
+.quote{
+  text-align:center;margin-top:18px;font-size:14px;color:var(--text-2);
+  font-style:italic;min-height:20px;transition:opacity .4s;
+}
+.quote-author{font-size:12px;color:var(--text-3);margin-top:4px;font-style:normal}
+
+/* Side column */
+.side{display:flex;flex-direction:column;gap:16px}
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px;box-shadow:var(--shadow);
+}
+.card h3{
+  font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;
+  letter-spacing:.08em;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;
+}
+.card h3 .badge{
+  background:var(--surface-2);border:1px solid var(--border);padding:2px 8px;
+  border-radius:999px;font-size:11px;color:var(--text-3);text-transform:none;letter-spacing:0;
+}
+
+/* Tasks */
+.task-input-row{display:flex;gap:8px;margin-bottom:10px}
+.task-input{
+  flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:10px 12px;color:var(--text);font-family:inherit;font-size:14px;outline:none;
+  transition:border .2s;
+}
+.task-input:focus{border-color:var(--accent)}
+.task-add{
+  padding:10px 14px;border-radius:var(--radius-sm);background:var(--accent);color:#fff;
+  border:none;cursor:pointer;font-weight:600;font-size:14px;
+}
+.task-list{list-style:none;display:flex;flex-direction:column;gap:6px;max-height:260px;overflow:auto}
+.task-item{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);
+  background:var(--surface-2);border:1px solid var(--border);transition:all .2s;cursor:pointer;
+}
+.task-item:hover{border-color:var(--border-2)}
+.task-item.done{opacity:.5}
+.task-item.done .task-name{text-decoration:line-through}
+.task-check{
+  width:20px;height:20px;border-radius:6px;border:2px solid var(--border-2);
+  display:grid;place-items:center;flex-shrink:0;transition:all .2s;
+}
+.task-item.done .task-check{background:var(--success);border-color:var(--success);color:#0b0d12}
+.task-name{flex:1;font-size:14px}
+.task-poms{font-size:11px;color:var(--text-3);font-family:'JetBrains Mono',monospace}
+.task-del{background:none;border:none;color:var(--text-3);cursor:pointer;padding:4px;border-radius:6px}
+.task-del:hover{color:var(--danger);background:rgba(248,113,113,.1)}
+.task-empty{font-size:13px;color:var(--text-3);text-align:center;padding:16px 0}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{
+  background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:12px;
+}
+.stat-val{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.stat-lbl{font-size:11px;color:var(--text-3);margin-top:2px}
+.stat-bar{height:4px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden}
+.stat-bar>div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:2px;transition:width .6s}
+.week-chart{display:flex;align-items:flex-end;gap:6px;height:80px;margin-top:8px}
+.week-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.week-bar{width:100%;background:linear-gradient(180deg,var(--accent),var(--accent-2));border-radius:6px 6px 0 0;min-height:4px;transition:height .6s}
+.week-lbl{font-size:10px;color:var(--text-3)}
+.week-val{font-size:10px;color:var(--text-2);font-family:'JetBrains Mono',monospace}
+
+/* Sounds */
+.sound-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sound-btn{
+  padding:10px 6px;border-radius:var(--radius-sm);background:var(--surface-2);
+  border:1px solid var(--border);color:var(--text-2);font-size:12px;font-weight:500;
+  cursor:pointer;text-align:center;transition:all .2s;
+}
+.sound-btn:hover{border-color:var(--border-2);color:var(--text)}
+.sound-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sound-btn .emoji{font-size:18px;display:block;margin-bottom:4px}
+.vol-row{display:flex;align-items:center;gap:10px;margin-top:10px}
+.vol-row input{flex:1;accent-color:var(--accent)}
+.vol-row label{font-size:12px;color:var(--text-3);min-width:44px}
+
+/* Settings modal */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;z-index:50;padding:20px;
+}
+.modal-backdrop.open{display:flex}
+.modal{
+  background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  width:100%;max-width:560px;max-height:90vh;overflow:auto;padding:24px;
+  box-shadow:var(--shadow);animation:pop .25s ease;
+}
+@keyframes pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
+.modal h2{font-size:18px;font-weight:700;margin-bottom:4px}
+.modal .sub{font-size:13px;color:var(--text-3);margin-bottom:20px}
+.settings-section{margin-bottom:20px}
+.settings-section h4{font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.setting-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 0;border-bottom:1px solid var(--border);
+}
+.setting-row:last-child{border-bottom:none}
+.setting-row label{font-size:14px}
+.setting-row .hint{font-size:11px;color:var(--text-3);margin-top:2px}
+.setting-input{
+  width:72px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;
+  padding:8px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;
+  text-align:center;outline:none;
+}
+.setting-input:focus{border-color:var(--accent)}
+.toggle{
+  width:44px;height:24px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);
+  position:relative;cursor:pointer;transition:all .2s;
+}
+.toggle.on{background:var(--accent);border-color:var(--accent)}
+.toggle::after{
+  content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+  background:#fff;transition:transform .2s;
+}
+.toggle.on::after{transform:translateX(20px)}
+.color-swatches{display:flex;gap:8px;flex-wrap:wrap}
+.swatch{
+  width:32px;height:32px;border-radius:50%;cursor:pointer;border:2px solid transparent;
+  transition:transform .2s;
+}
+.swatch:hover{transform:scale(1.1)}
+.swatch.active{border-color:#fff;box-shadow:0 0 0 2px var(--accent)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.btn-ghost{padding:10px 16px;border-radius:10px;background:transparent;color:var(--text-2);border:1px solid var(--border);cursor:pointer}
+.btn-ghost:hover{color:var(--text);border-color:var(--border-2)}
+
+/* Breathing overlay */
+.breathe-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);
+  display:none;align-items:center;justify-content:center;z-index:60;flex-direction:column;gap:20px;
+}
+.breathe-overlay.open{display:flex}
+.breathe-circle{
+  width:200px;height:200px;border-radius:50%;
+  background:radial-gradient(circle,var(--accent),transparent 70%);
+  box-shadow:0 0 80px var(--accent-glow);
+  animation:breathe 8s ease-in-out infinite;
+}
+@keyframes breathe{0%,100%{transform:scale(.7);opacity:.6}50%{transform:scale(1.1);opacity:1}}
+.breathe-text{font-size:20px;font-weight:600;color:#fff}
+.breathe-sub{font-size:13px;color:var(--text-2)}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--surface);border:1px solid var(--border);color:var(--text);
+  padding:12px 20px;border-radius:12px;box-shadow:var(--shadow);font-size:14px;
+  opacity:0;pointer-events:none;transition:all .3s;z-index:70;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Keyboard hints */
+.kbd{font-family:'JetBrains Mono',monospace;font-size:11px;padding:2px 6px;border-radius:4px;
+  background:var(--surface-2);border:1px solid var(--border);color:var(--text-3)}
+
+/* Fullscreen focus */
+body.focus-mode .side,body.focus-mode header.topbar .pill{display:none}
+body.focus-mode .app{grid-template-columns:1fr;padding:0;max-width:none}
+body.focus-mode .timer-card{border:none;border-radius:0;background:transparent;box-shadow:none;min-height:100vh;display:flex;flex-direction:column;justify-content:center}
+body.focus-mode .bg-grid{opacity:.6}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--border-2)}
+
+/* Responsive ring */
+@media(max-width:600px){
+  :root{--ring-size:260px}
+  .time-display{font-size:56px}
+  .timer-card{padding:24px 16px}
+}
+
+/* Heatmap */
+.heatmap{display:grid;grid-template-columns:repeat(13,1fr);gap:4px;margin-top:8px}
+.hm-cell{aspect-ratio:1;border-radius:3px;background:var(--surface-2);border:1px solid var(--border);position:relative}
+.hm-cell[data-l="1"]{background:rgba(124,92,255,.25)}
+.hm-cell[data-l="2"]{background:rgba(124,92,255,.45)}
+.hm-cell[data-l="3"]{background:rgba(124,92,255,.65)}
+.hm-cell[data-l="4"]{background:var(--accent)}
+.hm-legend{display:flex;gap:6px;align-items:center;font-size:10px;color:var(--text-3);margin-top:6px}
+.hm-legend span{width:12px;height:12px;border-radius:2px;background:var(--surface-2);border:1px solid var(--border)}
+/* Hourly chart */
+.hour-chart{display:flex;align-items:flex-end;gap:2px;height:60px;margin-top:8px}
+.hour-col{flex:1;display:flex;flex-direction:column;align-items:center}
+.hour-bar{width:100%;background:linear-gradient(180deg,var(--accent),var(--accent-2));border-radius:3px 3px 0 0;min-height:2px}
+.hour-lbl{font-size:8px;color:var(--text-3);margin-top:2px}
+/* Badges */
+.badge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.badge-item{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:8px;text-align:center;font-size:11px}
+.badge-item.locked{opacity:.35;filter:grayscale(1)}
+.badge-item .b-emoji{font-size:20px;display:block;margin-bottom:2px}
+.badge-item .b-name{color:var(--text-2);font-weight:600}
+/* XP */
+.xp-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:6px}
+.xp-bar>div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .6s}
+.level-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:4px}
+.level-row strong{font-size:18px;font-family:'JetBrains Mono',monospace}
+/* Music */
+.music-frame{width:100%;height:80px;border:none;border-radius:10px;margin-top:8px;background:var(--surface-2)}
+.music-presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.music-preset{padding:6px 10px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);font-size:11px;cursor:pointer;color:var(--text-2)}
+.music-preset:hover{border-color:var(--border-2);color:var(--text)}
+.music-input{width:100%;margin-top:8px}
+/* Room */
+.room-box{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-top:8px}
+.room-code{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;text-align:center;letter-spacing:.15em;margin:6px 0}
+.room-peers{font-size:12px;color:var(--text-3);text-align:center}
+.room-chat{max-height:120px;overflow:auto;display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.room-msg{font-size:12px;padding:4px 8px;background:var(--surface);border-radius:6px}
+.room-msg .who{color:var(--accent-2);font-weight:600}
+.room-input-row{display:flex;gap:6px;margin-top:6px}
+/* Shop */
+.shop-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.shop-item{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
+.shop-item.owned{border-color:var(--success)}
+.shop-item .s-name{font-size:12px;font-weight:600;margin-bottom:4px}
+.shop-item .s-price{font-size:11px;color:var(--text-3)}
+.shop-item button{margin-top:6px;padding:4px 10px;border-radius:6px;border:none;background:var(--accent);color:#fff;font-size:11px;cursor:pointer}
+.shop-item button:disabled{opacity:.5;cursor:not-allowed}
+/* History list */
+.history-list{max-height:180px;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.history-item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 10px;border-radius:8px;background:var(--surface-2);font-size:12px;
+}
+.history-item .hi-left{display:flex;flex-direction:column;gap:2px}
+.history-item .hi-mode{font-weight:600}
+.history-item .hi-time{color:var(--text-3);font-family:'JetBrains Mono',monospace;font-size:11px}
+.history-item .hi-dur{color:var(--text-2);font-family:'JetBrains Mono',monospace}
+
+/* Progress details */
+.progress-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text-3);margin-top:6px}
+.progress-row strong{color:var(--text-2)}
+
+/* Ambient visualizer */
+.viz{display:flex;align-items:flex-end;gap:3px;height:24px;margin-top:8px}
+.viz span{flex:1;background:var(--accent);border-radius:2px;opacity:.6;transition:height .1s}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<canvas class="particles" id="particles"></canvas>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      </div>
+      <div>
+        <h1>Pomodoro Focus</h1>
+        <p>Deep work, one session at a time</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <div class="pill" id="streakPill"><span class="dot"></span><span id="streakText">0 day streak</span></div>
+      <button class="icon-btn" id="focusModeBtn" title="Focus mode (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
+      <button class="icon-btn" id="breatheBtn" title="Breathing exercise"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></button>
+      <button class="icon-btn" id="settingsBtn" title="Settings (S)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <button class="icon-btn" id="themeBtn" title="Toggle theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="timer-card">
+      <div class="modes">
+        <button class="mode-btn active" data-mode="focus">Focus</button>
+        <button class="mode-btn" data-mode="short">Short Break</button>
+        <button class="mode-btn" data-mode="long">Long Break</button>
+      </div>
+      <div class="ring-wrap">
+        <svg class="ring-svg" viewBox="0 0 320 320">
+          <circle class="ring-bg" cx="160" cy="160" r="148"/>
+          <circle class="ring-fg ring-glow" id="ringFg" cx="160" cy="160" r="148" stroke="var(--focus)"/>
+        </svg>
+        <div class="ring-center">
+          <div class="time-display" id="timeDisplay">25:00</div>
+          <div class="phase-label" id="phaseLabel">Focus Session</div>
+          <div class="session-dots" id="sessionDots"></div>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn-icon" id="resetBtn" title="Reset (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+        <button class="btn btn-primary" id="startBtn">Start</button>
+        <button class="btn-icon" id="skipBtn" title="Skip (N)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg></button>
+      </div>
+      <div class="quote" id="quoteText">"The secret of getting ahead is getting started."</div>
+      <div class="quote-author" id="quoteAuthor">— Mark Twain</div>
+    </section>
+
+    <section class="card">
+      <h3>Today's Progress <span class="badge" id="todayBadge">0 / 8</span></h3>
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="stat-val" id="statPoms">0</div>
+          <div class="stat-lbl">Pomodoros</div>
+          <div class="stat-bar"><div id="statPomsBar" style="width:0%"></div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" id="statFocus">0m</div>
+          <div class="stat-lbl">Focus time</div>
+          <div class="stat-bar"><div id="statFocusBar" style="width:0%"></div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" id="statTasks">0</div>
+          <div class="stat-lbl">Tasks done</div>
+          <div class="stat-bar"><div id="statTasksBar" style="width:0%"></div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" id="statStreak">0</div>
+          <div class="stat-lbl">Day streak</div>
+          <div class="stat-bar"><div id="statStreakBar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="progress-row" style="margin-top:10px">
+        <span>Daily goal</span>
+        <strong id="goalText">0 / 8 pomodoros</strong>
+      </div>
+      <div class="stat-bar" style="margin-top:6px"><div id="goalBar" style="width:0%"></div></div>
+    </section>
+
+    <section class="card">
+      <h3>This Week</h3>
+      <div class="week-chart" id="weekChart"></div>
+    </section>
+  </main>
+
+  <aside class="side">
+    <section class="card">
+      <h3>Tasks <span class="badge" id="taskBadge">0</span></h3>
+      <div class="task-input-row">
+        <input class="task-input" id="taskInput" placeholder="Add a task..." />
+        <button class="task-add" id="taskAdd">+</button>
+      </div>
+      <ul class="task-list" id="taskList"></ul>
+      <div class="task-empty" id="taskEmpty">No tasks yet. Add one to stay focused.</div>
+    </section>
+
+    <section class="card">
+      <h3>Ambient Sound <span class="badge" id="soundBadge">Off</span></h3>
+      <div class="sound-grid">
+        <button class="sound-btn" data-sound="none"><span class="emoji">🔇</span>None</button>
+        <button class="sound-btn" data-sound="rain"><span class="emoji">🌧️</span>Rain</button>
+        <button class="sound-btn" data-sound="forest"><span class="emoji">🌲</span>Forest</button>
+        <button class="sound-btn" data-sound="cafe"><span class="emoji">☕</span>Café</button>
+        <button class="sound-btn" data-sound="whitenoise"><span class="emoji">〰️</span>White</button>
+        <button class="sound-btn" data-sound="ocean"><span class="emoji">🌊</span>Ocean</button>
+      </div>
+      <div class="vol-row">
+        <label>Volume</label>
+        <input type="range" id="volSlider" min="0" max="100" value="50" />
+        <span id="volVal" style="font-size:12px;color:var(--text-3);min-width:32px;text-align:right">50%</span>
+      </div>
+      <div class="viz" id="viz"></div>
+    </section>
+
+    <section class="card">
+      <h3>Session History <span class="badge" id="histBadge">0</span></h3>
+      <div class="history-list" id="historyList"></div>
+      <div class="task-empty" id="histEmpty">No sessions completed yet.</div>
+    </section>
+
+    <section class="card">
+      <h3>Music <span class="badge" id="musicBadge">Off</span></h3>
+      <div class="music-presets">
+        <button class="music-preset" data-url="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1">Lofi Girl</button>
+        <button class="music-preset" data-url="https://www.youtube.com/embed/5qap5aO4i9A?autoplay=1">Rain & Piano</button>
+        <button class="music-preset" data-url="https://www.youtube.com/embed/DWcJFNfaw9c?autoplay=1">Deep Focus</button>
+      </div>
+      <input class="task-input music-input" id="musicUrl" placeholder="Paste YouTube/Spotify embed URL..." />
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <button class="task-add" id="musicLoad" style="flex:1">Load</button>
+        <button class="btn-ghost" id="musicStop" style="padding:8px 12px">Stop</button>
+      </div>
+      <div id="musicContainer"></div>
+    </section>
+
+    <section class="card">
+      <h3>Level & Badges <span class="badge" id="levelBadge">Lv 1</span></h3>
+      <div class="level-row"><span>Level <strong id="levelNum">1</strong></span><span id="xpText" style="font-size:12px;color:var(--text-3)">0 / 100 XP</span></div>
+      <div class="xp-bar"><div id="xpBar" style="width:0%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:8px">
+        <span>🪙 <strong id="coinsVal">0</strong> coins</span>
+        <button class="btn-ghost" id="openShop" style="padding:4px 10px;font-size:11px">Shop</button>
+      </div>
+      <div class="badge-grid" id="badgeGrid" style="margin-top:10px"></div>
+    </section>
+
+    <section class="card">
+      <h3>Analytics <span class="badge" id="analyticsBadge">12w</span></h3>
+      <div class="heatmap" id="heatmap"></div>
+      <div class="hm-legend">Less <span></span><span style="background:rgba(124,92,255,.25)"></span><span style="background:rgba(124,92,255,.45)"></span><span style="background:rgba(124,92,255,.65)"></span><span style="background:var(--accent)"></span> More</div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:8px">Best hours</div>
+      <div class="hour-chart" id="hourChart"></div>
+      <button class="btn-ghost" id="exportCsv" style="width:100%;margin-top:10px;font-size:12px">Export CSV</button>
+    </section>
+
+    <section class="card">
+      <h3>Co-Focus Room <span class="badge" id="roomBadge">Solo</span></h3>
+      <div class="room-box">
+        <div style="display:flex;gap:6px">
+          <button class="task-add" id="createRoom" style="flex:1;font-size:12px">Create Room</button>
+          <button class="btn-ghost" id="joinRoomBtn" style="padding:8px 12px;font-size:12px">Join</button>
+        </div>
+        <input class="task-input" id="roomCodeInput" placeholder="Room code..." style="margin-top:6px" />
+        <div class="room-code" id="roomCode" style="display:none">----</div>
+        <div class="room-peers" id="roomPeers">Not connected</div>
+        <div class="room-chat" id="roomChat"></div>
+        <div class="room-input-row">
+          <input class="task-input" id="roomMsgInput" placeholder="Message..." />
+          <button class="task-add" id="roomSend">Send</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Shortcuts</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;color:var(--text-3)">
+        <div><span class="kbd">Space</span> Start/Pause</div>
+        <div><span class="kbd">R</span> Reset</div>
+        <div><span class="kbd">N</span> Skip</div>
+        <div><span class="kbd">S</span> Settings</div>
+        <div><span class="kbd">F</span> Focus mode</div>
+        <div><span class="kbd">1-3</span> Modes</div>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<!-- Settings modal -->
+<div class="modal-backdrop" id="settingsModal">
+  <div class="modal">
+    <h2>Settings</h2>
+    <p class="sub">Customize your focus experience. Changes save automatically.</p>
+
+    <div class="settings-section">
+      <h4>Durations (minutes)</h4>
+      <div class="setting-row">
+        <div><label>Focus</label><div class="hint">Work session length</div></div>
+        <input class="setting-input" id="setFocus" type="number" min="1" max="120" />
+      </div>
+      <div class="setting-row">
+        <div><label>Short Break</label><div class="hint">Quick rest</div></div>
+        <input class="setting-input" id="setShort" type="number" min="1" max="60" />
+      </div>
+      <div class="setting-row">
+        <div><label>Long Break</label><div class="hint">Extended rest</div></div>
+        <input class="setting-input" id="setLong" type="number" min="1" max="60" />
+      </div>
+      <div class="setting-row">
+        <div><label>Long break after</label><div class="hint">Pomodoros before long break</div></div>
+        <input class="setting-input" id="setLongAfter" type="number" min="2" max="10" />
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h4>Automation</h4>
+      <div class="setting-row">
+        <div><label>Auto-start breaks</label><div class="hint">Start break when focus ends</div></div>
+        <div class="toggle" id="togAutoBreak"></div>
+      </div>
+      <div class="setting-row">
+        <div><label>Auto-start focus</label><div class="hint">Start focus when break ends</div></div>
+        <div class="toggle" id="togAutoFocus"></div>
+      </div>
+      <div class="setting-row">
+        <div><label>Auto-switch mode</label><div class="hint">Switch tab automatically</div></div>
+        <div class="toggle" id="togAutoSwitch"></div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h4>Notifications</h4>
+      <div class="setting-row">
+        <div><label>Desktop notifications</label><div class="hint">Alert when session ends</div></div>
+        <div class="toggle" id="togNotify"></div>
+      </div>
+      <div class="setting-row">
+        <div><label>Sound alert</label><div class="hint">Play chime on completion</div></div>
+        <div class="toggle" id="togSoundAlert"></div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h4>Goals & Display</h4>
+      <div class="setting-row">
+        <div><label>Daily goal (pomodoros)</label><div class="hint">Target sessions per day</div></div>
+        <input class="setting-input" id="setGoal" type="number" min="1" max="20" />
+      </div>
+      <div class="setting-row">
+        <div><label>Show seconds</label><div class="hint">Display seconds in timer</div></div>
+        <div class="toggle" id="togSeconds"></div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h4>Theme Accent</h4>
+      <div class="color-swatches" id="swatches"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-ghost" id="resetSettings">Reset defaults</button>
+      <button class="btn-ghost" id="closeSettings">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Shop modal -->
+<div class="modal-backdrop" id="shopModal">
+  <div class="modal">
+    <h2>Theme Shop</h2>
+    <p class="sub">Spend coins to unlock premium accent colors. Coins earned by completing pomodoros.</p>
+    <div class="shop-grid" id="shopGrid"></div>
+    <div class="modal-actions"><button class="btn-ghost" id="closeShop">Done</button></div>
+  </div>
+</div>
+
+<!-- Breathing overlay -->
+<div class="breathe-overlay" id="breatheOverlay">
+  <div class="breathe-circle"></div>
+  <div class="breathe-text" id="breatheText">Inhale</div>
+  <div class="breathe-sub">4-4-4-4 box breathing · Press Esc to exit</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+/* ===================== State ===================== */
+const DEFAULTS = {
+  focus:25, short:5, long:15, longAfter:4,
+  autoBreak:true, autoFocus:false, autoSwitch:true,
+  notify:true, soundAlert:true, goal:8, showSeconds:true,
+  accent:'#7c5cff', theme:'dark', volume:50, sound:'none'
+};
+let settings = loadSettings();
+let mode = 'focus'; // focus | short | long
+let running = false;
+let remaining = settings.focus*60;
+let total = settings.focus*60;
+let completedPoms = 0; // in current cycle
+let interval = null;
+let audioCtx = null;
+let currentSoundNode = null;
+let analyser = null;
+let vizBars = [];
+let tasks = load('tasks', []);
+let history = load('history', []);
+let stats = load('stats', {}); // { 'YYYY-MM-DD': {poms, focusMin, tasks} }
+let hourCounts = load('hourCounts', {}); // { 'H': count }
+let streak = 0;
+
+/* Gamification */
+const GAME_DEFAULTS = {xp:0, coins:0, level:1, badges:[], ownedThemes:['#7c5cff']};
+let game = Object.assign({}, GAME_DEFAULTS, load('game', {}));
+if(!game.ownedThemes) game.ownedThemes=['#7c5cff'];
+if(!game.badges) game.badges=[];
+
+/* Collaboration */
+let peer=null, conn=null, isHost=false, roomCode=null;
+let peers=[];
+
+const $ = id => document.getElementById(id);
+
+/* ===================== Storage ===================== */
+function load(key, fallback){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):fallback;}catch{return fallback;} }
+function save(key,val){ try{localStorage.setItem(key,JSON.stringify(val));}catch{} }
+function loadSettings(){
+  const s = load('settings', {});
+  return Object.assign({}, DEFAULTS, s);
+}
+function persistSettings(){ save('settings', settings); }
+function todayKey(){ const d=new Date(); return d.toISOString().slice(0,10); }
+function dayKey(d){ return d.toISOString().slice(0,10); }
+
+/* ===================== Apply settings ===================== */
+function applySettings(){
+  document.documentElement.setAttribute('data-theme', settings.theme);
+  document.documentElement.style.setProperty('--accent', settings.accent);
+  // derive accent-2
+  document.documentElement.style.setProperty('--accent-2', lighten(settings.accent, 25));
+  document.documentElement.style.setProperty('--accent-glow', hexToRgba(settings.accent, .35));
+  // ring stroke color handled per mode
+  $('volSlider').value = settings.volume;
+  $('volVal').textContent = settings.volume+'%';
+  $('setFocus').value = settings.focus;
+  $('setShort').value = settings.short;
+  $('setLong').value = settings.long;
+  $('setLongAfter').value = settings.longAfter;
+  $('setGoal').value = settings.goal;
+  setToggle('togAutoBreak', settings.autoBreak);
+  setToggle('togAutoFocus', settings.autoFocus);
+  setToggle('togAutoSwitch', settings.autoSwitch);
+  setToggle('togNotify', settings.notify);
+  setToggle('togSoundAlert', settings.soundAlert);
+  setToggle('togSeconds', settings.showSeconds);
+  // theme button icon
+  updateThemeIcon();
+  // mark active sound
+  document.querySelectorAll('.sound-btn').forEach(b=>b.classList.toggle('active', b.dataset.sound===settings.sound));
+  // swatches
+  renderSwatches();
+  updateRingColor();
+  updateDisplay();
+  updateStats();
+  renderWeek();
+  renderTasks();
+  renderHistory();
+  updateStreak();
+  updateStreakPill();
+}
+function setToggle(id,on){ $(id).classList.toggle('on', on); }
+
+function lighten(hex, pct){
+  const c = hex.replace('#','');
+  let r=parseInt(c.slice(0,2),16), g=parseInt(c.slice(2,4),16), b=parseInt(c.slice(4,6),16);
+  r=Math.min(255, r + (255-r)*pct/100);
+  g=Math.min(255, g + (255-g)*pct/100);
+  b=Math.min(255, b + (255-b)*pct/100);
+  return '#'+[r,g,b].map(x=>Math.round(x).toString(16).padStart(2,'0')).join('');
+}
+function hexToRgba(hex,a){
+  const c=hex.replace('#','');
+  const r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+const ACCENTS = ['#7c5cff','#34d399','#38bdf8','#f472b6','#fbbf24','#f87171','#a3e635','#22d3ee','#fb923c','#e879f9'];
+function renderSwatches(){
+  const el=$('swatches'); el.innerHTML='';
+  ACCENTS.forEach(c=>{
+    const s=document.createElement('div');
+    s.className='swatch'+(c===settings.accent?' active':'');
+    s.style.background=c;
+    s.onclick=()=>{ settings.accent=c; persistSettings(); applySettings(); };
+    el.appendChild(s);
+  });
+}
+
+/* ===================== Timer core ===================== */
+function modeDuration(m){
+  if(m==='focus') return settings.focus*60;
+  if(m==='short') return settings.short*60;
+  return settings.long*60;
+}
+function modeColor(m){
+  if(m==='focus') return 'var(--focus)';
+  if(m==='short') return 'var(--short)';
+  return 'var(--long)';
+}
+function modeLabel(m){
+  if(m==='focus') return 'Focus Session';
+  if(m==='short') return 'Short Break';
+  return 'Long Break';
+}
+function setMode(m, resetTimer=true){
+  mode=m;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active', b.dataset.mode===m));
+  if(resetTimer){ remaining=modeDuration(m); total=remaining; }
+  updateRingColor();
+  updateDisplay();
+  if(settings.autoSwitch) {}
+}
+function updateRingColor(){
+  const fg=$('ringFg');
+  const map={focus:'--focus',short:'--short',long:'--long'};
+  fg.style.stroke = `var(${map[mode]})`;
+}
+function updateDisplay(){
+  const showSec = settings.showSeconds;
+  const m = Math.floor(remaining/60);
+  const s = remaining%60;
+  let txt;
+  if(showSec){ txt = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
+  else { txt = `${m}:${String(s).padStart(2,'0')}`; }
+  $('timeDisplay').textContent = txt;
+  $('phaseLabel').textContent = modeLabel(mode);
+  // ring
+  const fg=$('ringFg');
+  const r=148; const circ=2*Math.PI*r;
+  fg.setAttribute('stroke-dasharray', circ);
+  const frac = total>0 ? remaining/total : 0;
+  fg.setAttribute('stroke-dashoffset', circ*(1-frac));
+  // dots
+  renderDots();
+  document.title = `${txt} — ${modeLabel(mode)} · Pomodoro Focus`;
+}
+function renderDots(){
+  const el=$('sessionDots'); el.innerHTML='';
+  const n = settings.longAfter;
+  for(let i=0;i<n;i++){
+    const d=document.createElement('div');
+    d.className='dot';
+    if(i < completedPoms) d.classList.add('done');
+    else if(i===completedPoms && mode==='focus') d.classList.add('current');
+    el.appendChild(d);
+  }
+}
+
+function startTimer(){
+  if(running) return;
+  running=true;
+  $('startBtn').textContent='Pause';
+  if(!audioCtx){ try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch{} }
+  interval = setInterval(tick, 1000);
+}
+function pauseTimer(){
+  running=false;
+  $('startBtn').textContent='Start';
+  if(interval){ clearInterval(interval); interval=null; }
+}
+function toggleTimer(){ running?pauseTimer():startTimer(); }
+function resetTimer(){
+  pauseTimer();
+  remaining=modeDuration(mode); total=remaining;
+  updateDisplay();
+}
+function skipTimer(){
+  pauseTimer();
+  handleComplete(true);
+}
+function tick(){
+  remaining--;
+  if(remaining<=0){
+    remaining=0;
+    updateDisplay();
+    broadcastTimer();
+    handleComplete(false);
+    return;
+  }
+  updateDisplay();
+  broadcastTimer();
+}
+
+function handleComplete(skipped){
+  // record
+  if(!skipped && mode==='focus'){
+    completedPoms++;
+    recordPomodoro();
+    toast('Focus session complete! 🎉');
+    if(settings.soundAlert) playChime();
+    if(settings.notify) notify('Focus complete', 'Time for a break!');
+    // decide next mode
+    let nextMode;
+    if(completedPoms >= settings.longAfter){ nextMode='long'; completedPoms=0; }
+    else nextMode='short';
+    if(settings.autoSwitch){
+      setMode(nextMode, true);
+      if(settings.autoBreak) startTimer();
+    } else {
+      setMode(nextMode, true);
+      pauseTimer();
+    }
+  } else if(!skipped && (mode==='short'||mode==='long')){
+    toast(mode==='long'?'Long break over. Ready to focus!':'Break over. Back to work!');
+    if(settings.soundAlert) playChime();
+    if(settings.notify) notify('Break over', 'Time to focus!');
+    if(settings.autoSwitch){
+      setMode('focus', true);
+      if(settings.autoFocus) startTimer();
+    } else {
+      setMode('focus', true);
+    }
+  } else if(skipped){
+    // skipped: just reset to focus? keep mode? reset
+    remaining=modeDuration(mode); total=remaining;
+    updateDisplay();
+  }
+  updateStats();
+  renderWeek();
+  updateStreakPill();
+}
+
+/* ===================== Records ===================== */
+function recordPomodoro(){
+  const key=todayKey();
+  if(!stats[key]) stats[key]={poms:0, focusMin:0, tasks:0};
+  stats[key].poms++;
+  stats[key].focusMin += settings.focus;
+  save('stats', stats);
+  // hour counts
+  const h=new Date().getHours();
+  hourCounts[h]=(hourCounts[h]||0)+1;
+  save('hourCounts', hourCounts);
+  // history
+  history.unshift({mode:'Focus', time:new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), date:key, dur:settings.focus+'m', hour:h});
+  if(history.length>50) history.pop();
+  save('history', history);
+  // streak
+  updateStreak();
+  // gamification
+  awardXP(10 + (settings.focus>25?5:0));
+  game.coins += 2;
+  save('game', game);
+  checkBadges();
+  renderGame();
+  renderAnalytics();
+  // collaboration sync
+  if(conn && conn.open){ try{ conn.send({type:'pom', count: todayStats().poms}); }catch{} }
+}
+function markTaskDone(task){
+  const key=todayKey();
+  if(!stats[key]) stats[key]={poms:0, focusMin:0, tasks:0};
+  stats[key].tasks++;
+  save('stats', stats);
+}
+
+function updateStreak(){
+  // count consecutive days with poms ending today/yesterday
+  let count=0;
+  const d=new Date();
+  // if today has no poms, start from yesterday
+  const todayHas = (stats[todayKey()]||{}).poms>0;
+  if(!todayHas){ d.setDate(d.getDate()-1); }
+  while(true){
+    const k=dayKey(d);
+    if((stats[k]||{}).poms>0){ count++; d.setDate(d.getDate()-1); }
+    else break;
+    if(count>365) break;
+  }
+  streak=count;
+}
+function updateStreakPill(){
+  $('streakText').textContent = streak + ' day streak';
+}
+
+/* ===================== Gamification ===================== */
+const BADGES = [
+  {id:'first', name:'First Step', emoji:'🌱', desc:'Complete your first pomodoro', check:()=>totalPomsAllTime()>=1},
+  {id:'five', name:'High Five', emoji:'✋', desc:'5 pomodoros in a day', check:()=>todayStats().poms>=5},
+  {id:'ten', name:'Deca', emoji:'🔟', desc:'10 pomodoros in a day', check:()=>todayStats().poms>=10},
+  {id:'streak3', name:'On Fire', emoji:'🔥', desc:'3-day streak', check:()=>streak>=3},
+  {id:'streak7', name:'Week Warrior', emoji:'🗓️', desc:'7-day streak', check:()=>streak>=7},
+  {id:'early', name:'Early Bird', emoji:'🌅', desc:'Pomodoro before 8 AM', check:()=>hourCounts && Object.keys(hourCounts).some(h=>+h<8 && hourCounts[h]>0)},
+  {id:'night', name:'Night Owl', emoji:'🦉', desc:'Pomodoro after 10 PM', check:()=>hourCounts && Object.keys(hourCounts).some(h=>+h>=22 && hourCounts[h]>0)},
+  {id:'tasks5', name:'Task Master', emoji:'✅', desc:'Complete 5 tasks', check:()=>tasks.filter(t=>t.done).length>=5},
+  {id:'level5', name:'Veteran', emoji:'⭐', desc:'Reach level 5', check:()=>game.level>=5},
+  {id:'level10', name:'Master', emoji:'🏆', desc:'Reach level 10', check:()=>game.level>=10},
+];
+function totalPomsAllTime(){ return Object.values(stats).reduce((a,b)=>a+(b.poms||0),0); }
+function awardXP(n){
+  game.xp += n;
+  const needed = game.level*100;
+  while(game.xp >= needed && game.level < 50){
+    game.xp -= needed;
+    game.level++;
+    toast('Level up! You are now level '+game.level+' 🎉');
+    if(settings.soundAlert) playChime();
+  }
+  save('game', game);
+}
+function checkBadges(){
+  let unlocked=false;
+  BADGES.forEach(b=>{
+    if(!game.badges.includes(b.id) && b.check()){
+      game.badges.push(b.id); unlocked=true;
+      toast('Badge unlocked: '+b.emoji+' '+b.name);
+      if(settings.soundAlert) playChime();
+    }
+  });
+  if(unlocked) save('game', game);
+}
+function renderGame(){
+  $('levelNum').textContent = game.level;
+  $('levelBadge').textContent = 'Lv '+game.level;
+  const needed = game.level*100;
+  $('xpText').textContent = game.xp+' / '+needed+' XP';
+  $('xpBar').style.width = Math.min(100, (game.xp/needed)*100)+'%';
+  $('coinsVal').textContent = game.coins;
+  // badges
+  const grid=$('badgeGrid'); grid.innerHTML='';
+  BADGES.forEach(b=>{
+    const unlocked = game.badges.includes(b.id);
+    const d=document.createElement('div');
+    d.className='badge-item'+(unlocked?'':' locked');
+    d.title=b.desc;
+    d.innerHTML=`<span class="b-emoji">${b.emoji}</span><span class="b-name">${b.name}</span>`;
+    grid.appendChild(d);
+  });
+}
+function renderShop(){
+  const grid=$('shopGrid'); grid.innerHTML='';
+  const items=[
+    {name:'Emerald', color:'#34d399', price:20},
+    {name:'Sky', color:'#38bdf8', price:20},
+    {name:'Rose', color:'#f472b6', price:25},
+    {name:'Amber', color:'#fbbf24', price:25},
+    {name:'Crimson', color:'#f87171', price:30},
+    {name:'Lime', color:'#a3e635', price:30},
+    {name:'Cyan', color:'#22d3ee', price:35},
+    {name:'Orange', color:'#fb923c', price:35},
+  ];
+  items.forEach(it=>{
+    const owned = game.ownedThemes.includes(it.color);
+    const canBuy = game.coins>=it.price;
+    const d=document.createElement('div');
+    d.className='shop-item'+(owned?' owned':'');
+    d.innerHTML=`
+      <div class="s-name" style="color:${it.color}">${it.name}</div>
+      <div style="width:32px;height:32px;border-radius:50%;background:${it.color};margin:6px auto"></div>
+      <div class="s-price">${owned?'Owned':it.price+' coins'}</div>
+      <button data-color="${it.color}" data-price="${it.price}" ${owned||!canBuy?'disabled':''}>${owned?'Equipped?':'Buy'}</button>
+    `;
+    const btn=d.querySelector('button');
+    if(!owned){
+      btn.addEventListener('click', ()=>{
+        if(game.coins<it.price) return;
+        game.coins -= it.price;
+        game.ownedThemes.push(it.color);
+        save('game', game);
+        toast('Unlocked '+it.name+'!');
+        renderShop(); renderGame();
+      });
+    } else {
+      btn.textContent='Use';
+      btn.disabled=false;
+      btn.addEventListener('click', ()=>{
+        settings.accent=it.color; persistSettings(); applySettings();
+        toast('Theme applied');
+      });
+    }
+    grid.appendChild(d);
+  });
+}
+
+/* ===================== Stats UI ===================== */
+function todayStats(){ return stats[todayKey()]||{poms:0,focusMin:0,tasks:0}; }
+function updateStats(){
+  const t=todayStats();
+  $('statPoms').textContent = t.poms;
+  $('statFocus').textContent = t.focusMin+'m';
+  $('statTasks').textContent = t.tasks;
+  $('statStreak').textContent = streak;
+  const goal=settings.goal;
+  const pct = Math.min(100, (t.poms/goal)*100);
+  $('goalBar').style.width = pct+'%';
+  $('goalText').textContent = `${t.poms} / ${goal} pomodoros`;
+  $('todayBadge').textContent = `${t.poms} / ${goal}`;
+  // bars
+  $('statPomsBar').style.width = Math.min(100, t.poms*12)+'%';
+  $('statFocusBar').style.width = Math.min(100, t.focusMin/ (goal*settings.focus)*100)+'%';
+  $('statTasksBar').style.width = Math.min(100, t.tasks*20)+'%';
+  $('statStreakBar').style.width = Math.min(100, streak*10)+'%';
+  $('taskBadge').textContent = tasks.filter(t=>!t.done).length;
+  $('histBadge').textContent = history.length;
+  try{ renderGame(); renderAnalytics(); }catch(e){}
+}
+
+function renderWeek(){
+  const el=$('weekChart'); el.innerHTML='';
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const today=new Date();
+  // last 7 days
+  const arr=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date(); d.setDate(today.getDate()-i);
+    const k=dayKey(d);
+    const p=(stats[k]||{}).poms||0;
+    arr.push({label:days[d.getDay()], val:p, isToday: i===0});
+  }
+  const max=Math.max(1,...arr.map(a=>a.val));
+  arr.forEach(a=>{
+    const col=document.createElement('div'); col.className='week-col';
+    const bar=document.createElement('div'); bar.className='week-bar';
+    bar.style.height = (a.val/max*100)+'%';
+    if(a.isToday) bar.style.background='linear-gradient(180deg,var(--accent-2),var(--accent))';
+    const lbl=document.createElement('div'); lbl.className='week-lbl'; lbl.textContent=a.label;
+    const val=document.createElement('div'); val.className='week-val'; val.textContent=a.val;
+    col.appendChild(val); col.appendChild(bar); col.appendChild(lbl);
+    el.appendChild(col);
+  });
+}
+
+/* ===================== Analytics ===================== */
+function renderAnalytics(){
+  // heatmap: 12 weeks (84 days)
+  const hm=$('heatmap'); if(!hm) return; hm.innerHTML='';
+  const today=new Date();
+  // build array of last 84 days counts
+  const cells=[];
+  for(let i=83;i>=0;i--){
+    const d=new Date(); d.setDate(today.getDate()-i);
+    const k=dayKey(d);
+    const c=(stats[k]||{}).poms||0;
+    let level=0;
+    if(c>=1) level=1; if(c>=3) level=2; if(c>=5) level=3; if(c>=8) level=4;
+    cells.push({date:k, count:c, level});
+  }
+  cells.forEach(c=>{
+    const div=document.createElement('div');
+    div.className='hm-cell';
+    div.setAttribute('data-l', c.level);
+    div.title=c.date+' : '+c.count+' pomodoros';
+    hm.appendChild(div);
+  });
+  // hour chart
+  const hc=$('hourChart'); if(!hc) return; hc.innerHTML='';
+  const maxH=Math.max(1,...Object.values(hourCounts));
+  for(let h=0;h<24;h++){
+    const col=document.createElement('div'); col.className='hour-col';
+    const bar=document.createElement('div'); bar.className='hour-bar';
+    const cnt=hourCounts[h]||0;
+    bar.style.height = (cnt/maxH*100)+'%';
+    if(cnt===0) bar.style.opacity='.2';
+    const lbl=document.createElement('div'); lbl.className='hour-lbl'; lbl.textContent = h%3===0?h:'';
+    col.appendChild(bar); col.appendChild(lbl);
+    hc.appendChild(col);
+  }
+}
+function exportCSV(){
+  let csv='date,pomodoros,focusMinutes,tasks\n';
+  Object.keys(stats).sort().forEach(k=>{
+    const s=stats[k];
+    csv += `${k},${s.poms||0},${s.focusMin||0},${s.tasks||0}\n`;
+  });
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='pomodoro-stats.csv'; a.click();
+  URL.revokeObjectURL(url);
+  toast('Exported CSV');
+}
+
+/* ===================== Music ===================== */
+function loadMusic(url){
+  const c=$('musicContainer'); c.innerHTML='';
+  if(!url){ $('musicBadge').textContent='Off'; return; }
+  const iframe=document.createElement('iframe');
+  iframe.className='music-frame';
+  iframe.src=url;
+  iframe.allow='autoplay; encrypted-media';
+  c.appendChild(iframe);
+  $('musicBadge').textContent='Playing';
+}
+function stopMusic(){ $('musicContainer').innerHTML=''; $('musicBadge').textContent='Off'; }
+
+/* ===================== Tasks ===================== */
+function renderTasks(){
+  const list=$('taskList'); list.innerHTML='';
+  if(tasks.length===0){ $('taskEmpty').style.display='block'; return; }
+  $('taskEmpty').style.display='none';
+  tasks.forEach((t,idx)=>{
+    const li=document.createElement('li');
+    li.className='task-item'+(t.done?' done':'');
+    li.innerHTML=`
+      <div class="task-check">${t.done?'✓':''}</div>
+      <div class="task-name">${escapeHtml(t.name)}</div>
+      <div class="task-poms">${t.poms||0}/${t.est||1} 🍅</div>
+      <button class="task-del" data-idx="${idx}" title="Delete">✕</button>
+    `;
+    li.addEventListener('click', (e)=>{
+      if(e.target.classList.contains('task-del')) return;
+      toggleTask(idx);
+    });
+    li.querySelector('.task-del').addEventListener('click', (e)=>{ e.stopPropagation(); deleteTask(idx); });
+    list.appendChild(li);
+  });
+  updateStats();
+}
+function addTask(){
+  const v=$('taskInput').value.trim();
+  if(!v) return;
+  tasks.push({name:v, done:false, est:1, poms:0});
+  $('taskInput').value='';
+  save('tasks',tasks); renderTasks();
+}
+function toggleTask(idx){
+  tasks[idx].done = !tasks[idx].done;
+  if(tasks[idx].done) markTaskDone(tasks[idx]);
+  save('tasks',tasks); renderTasks();
+  checkBadges(); renderGame();
+}
+function deleteTask(idx){
+  tasks.splice(idx,1); save('tasks',tasks); renderTasks();
+}
+// increment pom count on focus task? We'll increment first incomplete task
+function bumpTaskPom(){
+  const t = tasks.find(x=>!x.done);
+  if(t){ t.poms=(t.poms||0)+1; save('tasks',tasks); renderTasks(); }
+}
+
+/* ===================== Ambient sound (Web Audio) ===================== */
+function ensureAudio(){ if(!audioCtx){ try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch{} } if(audioCtx && audioCtx.state==='suspended') audioCtx.resume(); }
+function stopSound(){
+  if(currentSoundNode){ try{ currentSoundNode.stop(); }catch{} currentSoundNode=null; }
+  if(window._soundNodes){ window._soundNodes.forEach(n=>{try{n.stop();}catch{}}); window._soundNodes=[]; }
+  analyser=null;
+}
+function playSound(name){
+  ensureAudio();
+  stopSound();
+  if(name==='none'){ settings.sound='none'; persistSettings(); updateSoundBadge(); return; }
+  if(!audioCtx) return;
+  const vol=settings.volume/100;
+  const gain=audioCtx.createGain(); gain.gain.value=vol;
+  window._gainNode=gain;
+  analyser=audioCtx.createAnalyser(); analyser.fftSize=64;
+  gain.connect(analyser); analyser.connect(audioCtx.destination);
+  window._soundNodes=[gain,analyser];
+  const nodes=[];
+  if(name==='whitenoise'){
+    const buf=audioCtx.createBuffer(1,audioCtx.sampleRate*2,audioCtx.sampleRate);
+    const data=buf.getChannelData(0);
+    for(let i=0;i<data.length;i++) data[i]=Math.random()*2-1;
+    const src=audioCtx.createBufferSource(); src.buffer=buf; src.loop=true;
+    src.connect(gain); src.start();
+    nodes.push(src);
+  } else if(name==='rain'){
+    // filtered noise bursts
+    const buf=audioCtx.createBuffer(1,audioCtx.sampleRate*2,audioCtx.sampleRate);
+    const data=buf.getChannelData(0);
+    for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*0.6;
+    const src=audioCtx.createBufferSource(); src.buffer=buf; src.loop=true;
+    const filt=audioCtx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=800;
+    src.connect(filt); filt.connect(gain); src.start();
+    nodes.push(src);
+  } else if(name==='ocean'){
+    const buf=audioCtx.createBuffer(1,audioCtx.sampleRate*4,audioCtx.sampleRate);
+    const data=buf.getChannelData(0);
+    for(let i=0;i<data.length;i++){ data[i]=(Math.random()*2-1)*0.5*Math.sin(i/ (audioCtx.sampleRate*0.5)); }
+    const src=audioCtx.createBufferSource(); src.buffer=buf; src.loop=true;
+    const filt=audioCtx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=500;
+    src.connect(filt); filt.connect(gain); src.start();
+    nodes.push(src);
+  } else if(name==='forest'){
+    // cricket-like chirps via oscillator
+    const osc=audioCtx.createOscillator(); osc.type='sine'; osc.frequency.value=4000;
+    const g2=audioCtx.createGain(); g2.gain.value=0.05;
+    osc.connect(g2); g2.connect(gain);
+    // tremolo
+    const lfo=audioCtx.createOscillator(); lfo.frequency.value=8;
+    const lg=audioCtx.createGain(); lg.gain.value=0.04;
+    lfo.connect(lg); lg.connect(g2.gain);
+    osc.start(); lfo.start();
+    nodes.push(osc,lfo);
+    // add wind noise
+    const buf=audioCtx.createBuffer(1,audioCtx.sampleRate*2,audioCtx.sampleRate);
+    const data=buf.getChannelData(0);
+    for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*0.3;
+    const src=audioCtx.createBufferSource(); src.buffer=buf; src.loop=true;
+    const filt=audioCtx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=300;
+    src.connect(filt); filt.connect(gain); src.start();
+    nodes.push(src);
+  } else if(name==='cafe'){
+    const buf=audioCtx.createBuffer(1,audioCtx.sampleRate*2,audioCtx.sampleRate);
+    const data=buf.getChannelData(0);
+    for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*0.4;
+    const src=audioCtx.createBufferSource(); src.buffer=buf; src.loop=true;
+    const filt=audioCtx.createBiquadFilter(); filt.type='bandpass'; filt.frequency.value=600; filt.Q.value=0.5;
+    src.connect(filt); filt.connect(gain); src.start();
+    nodes.push(src);
+  }
+  currentSoundNode = { stop: ()=>{ nodes.forEach(n=>{try{n.stop();}catch{}}); } };
+  window._soundNodes.push(...nodes);
+  settings.sound=name; persistSettings();
+  updateSoundBadge();
+  startViz();
+}
+function updateSoundBadge(){
+  const map={none:'Off',rain:'Rain',forest:'Forest',cafe:'Café',whitenoise:'White',ocean:'Ocean'};
+  $('soundBadge').textContent = map[settings.sound]||'Off';
+}
+function playChime(){
+  ensureAudio(); if(!audioCtx) return;
+  const now=audioCtx.currentTime;
+  [523.25,659.25,783.99].forEach((f,i)=>{
+    const o=audioCtx.createOscillator(); const g=audioCtx.createGain();
+    o.frequency.value=f; o.type='sine';
+    g.gain.setValueAtTime(0, now+i*0.12);
+    g.gain.linearRampToValueAtTime(0.25, now+i*0.12+0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, now+i*0.12+0.4);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(now+i*0.12); o.stop(now+i*0.12+0.5);
+  });
+}
+function startViz(){
+  const viz=$('viz'); viz.innerHTML='';
+  for(let i=0;i<16;i++){ const s=document.createElement('span'); s.style.height='4px'; viz.appendChild(s); vizBars.push(s); }
+  if(window._vizRaf) cancelAnimationFrame(window._vizRaf);
+  const loop=()=>{
+    if(analyser){
+      const data=new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(data);
+      vizBars.forEach((b,i)=>{
+        const v=data[i]||0;
+        b.style.height = (4 + v/255*20)+'px';
+      });
+    } else {
+      vizBars.forEach(b=>b.style.height='4px');
+    }
+    window._vizRaf=requestAnimationFrame(loop);
+  };
+  loop();
+}
+
+/* ===================== Notifications ===================== */
+function notify(title,body){
+  if(!('Notification' in window)) return;
+  if(Notification.permission==='granted'){ new Notification(title,{body,icon:''}); }
+  else if(Notification.permission!=='denied'){ Notification.requestPermission(); }
+}
+
+/* ===================== Quotes ===================== */
+const QUOTES = [
+  {q:"The secret of getting ahead is getting started.",a:"Mark Twain"},
+  {q:"Focus on being productive instead of busy.",a:"Tim Ferriss"},
+  {q:"It's not about having time, it's about making time.",a:"Unknown"},
+  {q:"Deep work is the ability to focus without distraction.",a:"Cal Newport"},
+  {q:"You will never reach your destination if you stop to throw stones at every dog.",a:"Winston Churchill"},
+  {q:"The only way to do great work is to love what you do.",a:"Steve Jobs"},
+  {q:"Concentrate all your thoughts upon the work at hand.",a:"Alexander Graham Bell"},
+  {q:"Action is the foundational key to all success.",a:"Pablo Picasso"},
+  {q:"Don't watch the clock; do what it does. Keep going.",a:"Sam Levenson"},
+  {q:"The future depends on what you do today.",a:"Mahatma Gandhi"},
+  {q:"Small daily improvements lead to stunning results.",a:"Robin Sharma"},
+  {q:"Where focus goes, energy flows.",a:"Tony Robbins"},
+  {q:"Discipline is the bridge between goals and accomplishment.",a:"Jim Rohn"},
+  {q:"One thing at a time. Most important thing first.",a:"Unknown"},
+  {q:"Your mind is for having ideas, not holding them.",a:"David Allen"}
+];
+let quoteIdx=0;
+function rotateQuote(){
+  const q=QUOTES[quoteIdx % QUOTES.length];
+  const el=$('quoteText'); el.style.opacity=0;
+  setTimeout(()=>{ el.textContent=`"${q.q}"`; $('quoteAuthor').textContent='— '+q.a; el.style.opacity=1; }, 200);
+  quoteIdx++;
+}
+setInterval(rotateQuote, 45000);
+
+/* ===================== Particles ===================== */
+function initParticles(){
+  const c=$('particles'); const ctx=c.getContext('2d');
+  let w,h,pts=[];
+  function resize(){ w=c.width=window.innerWidth; h=c.height=window.innerHeight; }
+  resize(); window.addEventListener('resize',resize);
+  for(let i=0;i<60;i++) pts.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.5+0.5});
+  function loop(){
+    ctx.clearRect(0,0,w,h);
+    pts.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>w) p.vx*=-1;
+      if(p.y<0||p.y>h) p.vy*=-1;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(124,92,255,0.25)'; ctx.fill();
+    });
+    requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+/* ===================== History UI ===================== */
+function renderHistory(){
+  const list=$('historyList'); list.innerHTML='';
+  if(history.length===0){ $('histEmpty').style.display='block'; return; }
+  $('histEmpty').style.display='none';
+  history.slice(0,20).forEach(h=>{
+    const div=document.createElement('div');
+    div.className='history-item';
+    div.innerHTML=`
+      <div class="hi-left">
+        <div class="hi-mode">🍅 ${escapeHtml(h.mode)}</div>
+        <div class="hi-time">${escapeHtml(h.date)} · ${escapeHtml(h.time)}</div>
+      </div>
+      <div class="hi-dur">${escapeHtml(h.dur)}</div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+/* ===================== Modal ===================== */
+function openSettings(){ $('settingsModal').classList.add('open'); }
+function closeSettings(){ $('settingsModal').classList.remove('open'); applyFromInputs(); }
+function applyFromInputs(){
+  settings.focus = clamp(parseInt($('setFocus').value)||25,1,120);
+  settings.short = clamp(parseInt($('setShort').value)||5,1,60);
+  settings.long = clamp(parseInt($('setLong').value)||15,1,60);
+  settings.longAfter = clamp(parseInt($('setLongAfter').value)||4,2,10);
+  settings.goal = clamp(parseInt($('setGoal').value)||8,1,20);
+  persistSettings();
+  // reset timer if not running
+  if(!running){ remaining=modeDuration(mode); total=remaining; updateDisplay(); }
+  updateStats(); renderWeek();
+}
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function toggleSetting(key, el){
+  settings[key] = !settings[key];
+  el.classList.toggle('on', settings[key]);
+  persistSettings();
+  applySettings();
+}
+
+/* ===================== Escape html ===================== */
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ===================== Toast ===================== */
+let toastTimer;
+function toast(msg){
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+/* ===================== Breathing ===================== */
+let breatheInterval=null;
+function openBreathe(){
+  $('breatheOverlay').classList.add('open');
+  const phases=['Inhale','Hold','Exhale','Hold'];
+  let i=0;
+  $('breatheText').textContent=phases[0];
+  breatheInterval=setInterval(()=>{
+    i=(i+1)%4; $('breatheText').textContent=phases[i];
+  },2000);
+}
+function closeBreathe(){
+  $('breatheOverlay').classList.remove('open');
+  if(breatheInterval){ clearInterval(breatheInterval); breatheInterval=null; }
+}
+
+/* ===================== Collaboration ===================== */
+function genCode(){ return Math.random().toString(36).slice(2,8).toUpperCase(); }
+function createRoom(){
+  if(peer){ try{peer.destroy();}catch{} }
+  roomCode=genCode();
+  peer=new Peer('pomo-'+roomCode);
+  peer.on('open', ()=>{ $('roomCode').style.display='block'; $('roomCode').textContent=roomCode; $('roomPeers').textContent='Waiting for peers...'; isHost=true; toast('Room created: '+roomCode); });
+  peer.on('connection', c=>{ conn=c; setupConn(c); });
+  peer.on('error', e=>{ toast('Peer error: '+e.type); });
+}
+function joinRoom(code){
+  if(peer){ try{peer.destroy();}catch{} }
+  peer=new Peer();
+  peer.on('open', ()=>{
+    conn=peer.connect('pomo-'+code);
+    conn.on('open', ()=>{ setupConn(conn); $('roomCode').style.display='block'; $('roomCode').textContent=code; roomCode=code; $('roomPeers').textContent='Connected'; toast('Joined room'); });
+  });
+  peer.on('error', e=>{ toast('Peer error: '+e.type); });
+}
+function setupConn(c){
+  c.on('data', data=>{
+    if(data.type==='chat'){ appendMsg(data.who||'Peer', data.text); }
+    if(data.type==='timer'){ 
+      // sync timer
+      if(typeof data.running==='boolean'){ if(data.running && !running) startTimer(); if(!data.running && running) pauseTimer(); }
+      if(data.remaining!=null){ remaining=data.remaining; total=data.total||remaining; updateDisplay(); }
+      if(data.mode){ setMode(data.mode,false); }
+    }
+    if(data.type==='pom'){ appendMsg('System', 'Peer completed a pomodoro! 🍅'); }
+  });
+  c.on('close', ()=>{ $('roomPeers').textContent='Disconnected'; conn=null; });
+  $('roomPeers').textContent='Connected';
+}
+function broadcastTimer(){
+  if(conn && conn.open){
+    try{ conn.send({type:'timer', mode, remaining, total, running}); }catch{}
+  }
+}
+function appendMsg(who,text){
+  const chat=$('roomChat');
+  const d=document.createElement('div'); d.className='room-msg';
+  d.innerHTML=`<span class="who">${escapeHtml(who)}:</span> ${escapeHtml(text)}`;
+  chat.appendChild(d); chat.scrollTop=chat.scrollHeight;
+}
+function sendMsg(){
+  const inp=$('roomMsgInput'); const t=inp.value.trim(); if(!t) return;
+  appendMsg('You', t);
+  if(conn && conn.open){ try{ conn.send({type:'chat', who:'Peer', text:t}); }catch{} }
+  inp.value='';
+}
+
+/* ===================== Event wiring ===================== */
+function init(){
+  // load
+  applySettings();
+  // ring circumference
+  updateDisplay();
+  initParticles();
+  rotateQuote();
+  startViz();
+  renderGame();
+  renderAnalytics();
+  renderWeek();
+
+  // mode buttons
+  document.querySelectorAll('.mode-btn').forEach(b=>{
+    b.addEventListener('click', ()=>{ if(!running) setMode(b.dataset.mode, true); else { pauseTimer(); setMode(b.dataset.mode,true);} });
+  });
+
+  // controls
+  $('startBtn').addEventListener('click', toggleTimer);
+  $('resetBtn').addEventListener('click', resetTimer);
+  $('skipBtn').addEventListener('click', skipTimer);
+
+  // settings
+  $('settingsBtn').addEventListener('click', openSettings);
+  $('closeSettings').addEventListener('click', closeSettings);
+  $('settingsModal').addEventListener('click', (e)=>{ if(e.target.id==='settingsModal') closeSettings(); });
+  $('resetSettings').addEventListener('click', ()=>{
+    settings=Object.assign({},DEFAULTS); persistSettings(); applySettings();
+    if(!running){ remaining=modeDuration(mode); total=remaining; updateDisplay(); }
+    toast('Settings reset');
+  });
+  // toggles
+  const toggleMap = {
+    togAutoBreak:'autoBreak', togAutoFocus:'autoFocus', togAutoSwitch:'autoSwitch',
+    togNotify:'notify', togSoundAlert:'soundAlert', togSeconds:'showSeconds'
+  };
+  Object.entries(toggleMap).forEach(([id,key])=>{
+    $(id).addEventListener('click', ()=>toggleSetting(key, $(id)));
+  });
+  // inputs apply on change
+  ['setFocus','setShort','setLong','setLongAfter','setGoal'].forEach(id=>{
+    $(id).addEventListener('change', applyFromInputs);
+  });
+
+  // theme
+  $('themeBtn').addEventListener('click', ()=>{
+    settings.theme = settings.theme==='dark'?'light':'dark';
+    persistSettings(); applySettings();
+  });
+
+  // focus mode
+  $('focusModeBtn').addEventListener('click', ()=>document.body.classList.toggle('focus-mode'));
+
+  // breathe
+  $('breatheBtn').addEventListener('click', openBreathe);
+  $('breatheOverlay').addEventListener('click', (e)=>{ if(e.target.id==='breatheOverlay') closeBreathe(); });
+
+  // tasks
+  $('taskAdd').addEventListener('click', addTask);
+  $('taskInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') addTask(); });
+
+  // sounds
+  document.querySelectorAll('.sound-btn').forEach(b=>{
+    b.addEventListener('click', ()=>playSound(b.dataset.sound));
+  });
+  $('volSlider').addEventListener('input', (e)=>{
+    settings.volume=parseInt(e.target.value);
+    $('volVal').textContent=settings.volume+'%';
+    persistSettings();
+    if(window._gainNode && audioCtx){
+      window._gainNode.gain.value=settings.volume/100;
+    }
+  });
+
+  // keyboard
+  document.addEventListener('keydown', (e)=>{
+    if(e.target.tagName==='INPUT') return;
+    if(e.code==='Space'){ e.preventDefault(); toggleTimer(); }
+    else if(e.key==='r'||e.key==='R'){ resetTimer(); }
+    else if(e.key==='n'||e.key==='N'){ skipTimer(); }
+    else if(e.key==='s'||e.key==='S'){ openSettings(); }
+    else if(e.key==='f'||e.key==='F'){ document.body.classList.toggle('focus-mode'); }
+    else if(e.key==='Escape'){ closeSettings(); closeBreathe(); }
+    else if(e.key==='1'){ if(!running) setMode('focus',true); }
+    else if(e.key==='2'){ if(!running) setMode('short',true); }
+    else if(e.key==='3'){ if(!running) setMode('long',true); }
+  });
+
+  // Music
+  document.querySelectorAll('.music-preset').forEach(b=>{
+    b.addEventListener('click', ()=>loadMusic(b.dataset.url));
+  });
+  $('musicLoad').addEventListener('click', ()=>loadMusic($('musicUrl').value.trim()));
+  $('musicStop').addEventListener('click', stopMusic);
+
+  // Shop
+  $('openShop').addEventListener('click', ()=>{ renderShop(); $('shopModal').classList.add('open'); });
+  $('closeShop').addEventListener('click', ()=> $('shopModal').classList.remove('open'));
+  $('shopModal').addEventListener('click', e=>{ if(e.target.id==='shopModal') $('shopModal').classList.remove('open'); });
+
+  // Analytics export
+  $('exportCsv').addEventListener('click', exportCSV);
+
+  // Collaboration
+  $('createRoom').addEventListener('click', createRoom);
+  $('joinRoomBtn').addEventListener('click', ()=>{
+    const code=$('roomCodeInput').value.trim().toUpperCase();
+    if(code) joinRoom(code);
+  });
+  $('roomSend').addEventListener('click', sendMsg);
+  $('roomMsgInput').addEventListener('keydown', e=>{ if(e.key==='Enter') sendMsg(); });
+
+  // request notification permission on first interaction
+  document.addEventListener('click', ()=>{ if(settings.notify && 'Notification' in window && Notification.permission==='default') Notification.requestPermission(); }, {once:true});
+
+  // bump task pom on focus complete handled in handleComplete? Add hook
+  const origHandle=handleComplete;
+  // wrap: after recording pom, bump task
+  // We'll patch by editing handleComplete? Instead call bump in record path: modify recordPomodoro
+}
+
+// Patch recordPomodoro to bump task
+const _origRecord = recordPomodoro;
+recordPomodoro = function(){ _origRecord(); bumpTaskPom(); };
+
+function updateThemeIcon(){
+  // optional
+}
+
+/* helpers for theme icon already */
+function updateRingColor(){ /* already */ }
+
+init();
+
+// Ensure ring color set initially
+updateRingColor();
+</script>
+</body>
+</html>
