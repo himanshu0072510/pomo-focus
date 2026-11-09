@@ -653,6 +653,18 @@ body.focus-mode .bg-grid{opacity:.6}
     </section>
 
     <section class="card">
+      <h3>Rust Tools <span class="badge" id="rustBadge">WASM</span></h3>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button class="btn-ghost" id="rustScore" style="width:100%;font-size:12px">Compute Focus Score</button>
+        <button class="btn-ghost" id="rustKeywords" style="width:100%;font-size:12px">Extract Keywords from Last Note</button>
+        <button class="btn-ghost" id="rustEncrypt" style="width:100%;font-size:12px">Encrypt & Export Backup</button>
+        <button class="btn-ghost" id="rustDecrypt" style="width:100%;font-size:12px">Import & Decrypt Backup</button>
+        <button class="btn-ghost" id="rustCompress" style="width:100%;font-size:12px">Compress History Export</button>
+      </div>
+      <div id="rustOutput" style="font-size:12px;color:var(--text-2);margin-top:8px;min-height:16px"></div>
+    </section>
+
+    <section class="card">
       <h3>Shortcuts</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;color:var(--text-3)">
         <div><span class="kbd">Space</span> Start/Pause</div>
@@ -785,6 +797,7 @@ body.focus-mode .bg-grid{opacity:.6}
 </div>
 
 <div class="toast" id="toast"></div>
+<input type="file" id="backupFile" style="display:none" accept=".txt" />
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
@@ -833,6 +846,17 @@ let pendingNoteCallback = null;
 /* Collaboration */
 let peer=null, conn=null, isHost=false, roomCode=null;
 let peers=[];
+/* Rust WASM */
+let RustCore = null;
+async function loadRustCore(){
+  try {
+    const m = await import('./wasm/pomo_core.js');
+    await m.default();
+    RustCore = m;
+    const b=$('rustBadge'); if(b) b.textContent='Ready';
+  } catch(e){ console.warn('Rust WASM unavailable:', e); const b=$('rustBadge'); if(b) b.textContent='N/A'; }
+}
+loadRustCore();
 
 const $ = id => document.getElementById(id);
 
@@ -1252,7 +1276,7 @@ function updateStats(){
   $('statStreakBar').style.width = Math.min(100, streak*10)+'%';
   $('taskBadge').textContent = tasks.filter(t=>!t.done).length;
   $('histBadge').textContent = history.length;
-  try{ renderGame(); renderAnalytics(); renderForest(); renderChallenges(); updateLeaderboard(); }catch(e){}
+  try{ renderGame(); renderAnalytics(); renderForest(); renderChallenges(); updateLeaderboard(); rustInsights(); }catch(e){}
 }
 
 function renderWeek(){
@@ -1846,6 +1870,84 @@ function sendMsg(){
   inp.value='';
 }
 
+/* ===================== Rust Tools ===================== */
+function rustOut(msg){ const el=$('rustOutput'); if(el) el.textContent=msg; }
+function rustScore(){
+  if(!RustCore){ rustOut('Rust WASM not loaded'); return; }
+  const t=todayStats();
+  const score=RustCore.compute_focus_score(totalPomsAllTime(), Object.values(stats).reduce((a,b)=>a+(b.focusMin||0),0), streak, tasks.filter(x=>x.done).length);
+  rustOut('Focus score: '+score.toFixed(1)+' (today poms: '+t.poms+')');
+  toast('Focus score: '+score.toFixed(1));
+}
+function rustKeywords(){
+  if(!RustCore){ rustOut('Rust WASM not loaded'); return; }
+  const last=history.find(h=>h.note);
+  const text = last ? (last.note||'') : (history[0]?.tag||'');
+  const kw=RustCore.extract_keywords(text || 'focus work study reading coding');
+  rustOut('Keywords: '+(kw.length?kw.join(', '):'none'));
+}
+function rustEncrypt(){
+  if(!RustCore){ rustOut('Rust WASM not loaded'); return; }
+  const pw=prompt('Password for backup:'); if(!pw) return;
+  const data=JSON.stringify({stats,history,tasks,forest,game,hourCounts,tagStats});
+  const enc=RustCore.encrypt_text(data, pw);
+  const blob=new Blob([enc],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='pomo-backup.enc'; a.click();
+  URL.revokeObjectURL(url);
+  rustOut('Encrypted backup downloaded');
+  toast('Encrypted backup downloaded');
+}
+function rustDecrypt(){
+  if(!RustCore){ rustOut('Rust WASM not loaded'); return; }
+  const inp=$('backupFile');
+  inp.onchange=()=>{
+    const file=inp.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const pw=prompt('Password:'); if(!pw) return;
+      const dec=RustCore.decrypt_text(reader.result, pw);
+      if(!dec){ rustOut('Decryption failed'); return; }
+      try{
+        const d=JSON.parse(dec);
+        if(d.stats) { Object.assign(stats,d.stats); save('stats',stats); }
+        if(d.history) { history=d.history; save('history',history); }
+        if(d.tasks) { tasks=d.tasks; save('tasks',tasks); }
+        if(d.forest) { forest=d.forest; save('forest',forest); }
+        if(d.game) { game=d.game; save('game',game); }
+        if(d.hourCounts) { hourCounts=d.hourCounts; save('hourCounts',hourCounts); }
+        if(d.tagStats) { tagStats=d.tagStats; save('tagStats',tagStats); }
+        applySettings(); renderTasks(); renderHistory(); renderForest(); renderGame(); renderAnalytics(); updateStats();
+        rustOut('Backup restored');
+        toast('Backup restored');
+      }catch(e){ rustOut('Invalid backup'); }
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+function rustCompress(){
+  if(!RustCore){ rustOut('Rust WASM not loaded'); return; }
+  const data=JSON.stringify({stats,history});
+  const comp=RustCore.compress_text(data);
+  const orig=data.length;
+  rustOut('Compressed: '+orig+' -> '+comp.length+' chars ('+Math.round(comp.length/orig*100)+'%)');
+  // offer download
+  const blob=new Blob([comp],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='pomo-history.gz.b64'; a.click();
+  URL.revokeObjectURL(url);
+}
+function rustInsights(){
+  if(!RustCore) return;
+  try {
+    const s=JSON.stringify(stats);
+    const ins=RustCore.productivity_insights(s);
+    const o=JSON.parse(ins);
+    rustOut('Insights: '+o.total_poms+' poms, '+o.total_minutes+' min, score '+o.score);
+  } catch(e){}
+}
+
 /* ===================== Event wiring ===================== */
 function init(){
   // load
@@ -1978,6 +2080,13 @@ function init(){
 
   // Leaderboard self
   pushSelfToLeaderboard();
+
+  // Rust tools
+  $('rustScore').addEventListener('click', rustScore);
+  $('rustKeywords').addEventListener('click', rustKeywords);
+  $('rustEncrypt').addEventListener('click', rustEncrypt);
+  $('rustDecrypt').addEventListener('click', rustDecrypt);
+  $('rustCompress').addEventListener('click', rustCompress);
 
   // Collaboration
   $('createRoom').addEventListener('click', createRoom);
